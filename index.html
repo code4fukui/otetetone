@@ -28,104 +28,33 @@ src: <a href="https://github.com/code4fukui/okuchitone/">okuchitone src on GitHu
 <script type="module">
 import { Camera } from "https://code4fukui.github.io/Camera/Camera.js";
 import { XTone } from "./XTone.js";
+import { drawConnectorsPolygon } from "https://code4fukui.github.io/mediapipe-test/drawConnectorsPolygon.js";
+import { FACEMESH_POLYGON_LIPS } from "https://code4fukui.github.io/mediapipe-test/FACEMESH_POLYGON.js";
+
+const MAX_TONES = 5;
 
 const g = canvasElement.getContext("2d");
 
 const faceMesh = new FaceMesh({ locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${file}` });
 
-function q(a) {
-  var c = "undefined" != typeof Symbol && Symbol.iterator && a[Symbol.iterator];
-  return c ? c.call(a) : { next: h(a) };
-};
-
-const w = {
-  color: "white",
-  lineWidth: 4,
-  radius: 6,
-  visibilityMin: .5,
-};
-
-const drawConnectors2 = (a, c, b, d, numon) => {
-  const x = (a) => {
-    a = a || {};
-    return Object.assign({}, w, { fillColor: a.color }, a);
-  };
-  const y = (a, c) => {
-    return a instanceof Function ? a(c) : a;
-  };
-  if (c && b) {
-    d = x(d);
-    a.save();
-    const w = canvasElement.width;
-    const h = canvasElement.height;
-    /*
-    const zoom = parseInt(selzoom.value);
-    a.translate(-w / 2, -h / 2);
-    a.scale(zoom, zoom);
-    const rz = [.5, -1 / 16, -1 / 8, -1 / 4, -.3][zoom - 1];
-    //a.translate(w / 2, h / 2); // zoom 1
-    //a.translate(-w / 8, -h / 8); // zoom 2
-    //a.translate(-w / 8, -h / 8); // zoom 3
-    //a.translate(-w / 16, -h / 16); // zoom 4
-    //a.translate(-w / 4, -h / 4); // zoom 5
-    a.translate(w * rz, h * rz); // zoom 5
-    //a.translate(-w / (zoom * 2), -h / (zoom * 2));
-    */
-    const e = a.canvas;
-    let f = 0;
-    const b2 = q(b);
-    a.strokeStyle = d.color; // y(d.color, { index: f, from: g, to: k }),
-    //a.fillStyle = "red";//y(d.color, { index: f, from: g, to: k }),
-    a.lineWidth = d.lineWidth; //y(d.lineWidth, { index: f, from: g, to: k });
-    for (let g = b2.next(); !g.done; g = b2.next()) {
-      let k = g.value;
-      g = c[k[0]];
-      k = c[k[1]];
-      if (g && k && (
-        void 0 === g.visibility || g.visibility > d.visibilityMin
-      ) && (
-        void 0 === k.visibility || k.visibility > d.visibilityMin
-      )) {
-        a.beginPath();
-        a.moveTo(g.x * e.width, g.y * e.height);
-        a.lineTo(k.x * e.width, k.y * e.height);
-        a.stroke();
-      }
-      ++f;
-    }
-    //a.fill();
-    if (numon) {
-      const pos = [];
-      for (const n of b) {
-        if (!pos.includes(n[0])) pos.push(n[0]);
-        if (!pos.includes(n[1])) pos.push(n[1]);
-      }
-      a.fillStyle = "black";
-      a.lineWidth = 1;
-      a.font = "normal 12px sans-serif";
-      pos.sort();
-      for (let i = 0; i < pos.length; i++) {
-        const p = pos[i];
-        const g = c[p];
-        a.fillText(p, g.x * e.width, g.y * e.height);
-      }
-    }
-    a.restore();
-  }
-};
-
-const xtone = new XTone();
-xtone.freqmin = 110 / 4;
-xtone.ferqmax = 880 * 8;
+const xtones = [];
+for (let i = 0; i < MAX_TONES; i++) {
+  const xtone = new XTone();
+  xtone.freqmin = 110 / 4;
+  xtone.ferqmax = 880 * 8;
+  xtones.push(xtone);
+}
 
 btn.onclick = () => {
   btn.style.display = "none";
+  const xtone = xtones[0];
   xtone.play(0.1, 0.5);
   xtone.play(0);
 };
 
 faceMesh.setOptions({
-  maxNumFaces: 1,
+  //running_mode: VIDEO,
+  maxNumFaces: MAX_TONES,
   refineLandmarks: true,
   minDetectionConfidence: 0.5,
   minTrackingConfidence: 0.5,
@@ -148,7 +77,14 @@ faceMesh.onResults((res) => {
     g.drawImage(res.image, 0, 0, w, h);
   }
   if (res.multiFaceLandmarks) {
-    for (const landmarks of res.multiFaceLandmarks) {
+    //for (const landmarks of res.multiFaceLandmarks) {
+    for (let i = 0; i < MAX_TONES; i++) {
+      const xtone = xtones[i];
+      const landmarks = res.multiFaceLandmarks[i];
+      if (!landmarks) {
+        xtone.play(0);
+        continue;
+      }
       /*
       drawConnectors2(g, landmarks, FACEMESH_TESSELATION, { color: 'gray', lineWidth: 1 });
       drawConnectors2(g, landmarks, FACEMESH_RIGHT_EYE, { color: 'black' });
@@ -159,7 +95,8 @@ faceMesh.onResults((res) => {
       drawConnectors2(g, landmarks, FACEMESH_LEFT_IRIS, { color: 'black' });
       drawConnectors2(g, landmarks, FACEMESH_FACE_OVAL, { color: "balck" });
       */
-      drawConnectors2(g, landmarks, FACEMESH_LIPS, { color: "red" }, false);
+      //drawConnectors2(g, landmarks, FACEMESH_LIPS, { color: "red" }, false);
+      drawConnectorsPolygon(g, landmarks, FACEMESH_POLYGON_LIPS, { color: "red" });
 
       const getDistance = (landmarks, p1, p2) => {
         const l1 = landmarks[p1];

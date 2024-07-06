@@ -23,15 +23,18 @@ const createOscillator = (type = "sawtooth") => {
 };
 
 export class XTone {
-  constructor(type) {
+  constructor(type = "sawtooth") {
     this.type = type;
     this.freqmin = 220;
     this.freqmax = 880;
+    this.tone = 0.5;
   }
-  play(vol = 0.5, tone = 0.5) {
+  play(vol = 0.5, tone) {
+    if (tone === undefined) {
+      tone = this.tone;
+    }
     if (!this.init) {
       this.init = true;
-      const type = "sawtooth";
       this.oscillator = createOscillator(this.type);
       this.gainNode = audioCtx.createGain();
       this.oscillator.connect(this.gainNode);
@@ -41,6 +44,7 @@ export class XTone {
     if (vol > 0) {
       const freq = this.freqmin + tone * (this.freqmax - this.freqmin);
       this.oscillator.frequency.setValueAtTime(freq, audioCtx.currentTime);
+      this.tone = tone;
     }
     this.gainNode.gain.setValueAtTime(vol, audioCtx.currentTime);
   }
