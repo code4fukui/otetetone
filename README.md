@@ -1,8 +1,9 @@
-# okuchitone
+# otetetone
  
-https://code4fukui.github.io/okuchitone/
+https://code4fukui.github.io/otetetone/
 
 ## reference
 
-- [MediaPipe test](https://code4fukui.github.io/mediapipe-test/)
+- [okuchitone](https://code4fukui.github.io/okuchitone/)
 - [smaphotone](https://code4fukui.github.io/smaphotone/)
+- [MediaPipe test](https://code4fukui.github.io/mediapipe-test/)
