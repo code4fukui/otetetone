@@ -1,5 +1,5 @@
 <!DOCTYPE html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width">
-<title>okuchitone</title>
+<title>otetetone</title>
 <script src="https://cdn.jsdelivr.net/npm/@mediapipe/control_utils/control_utils.js" crossorigin="anonymous"></script>
 <!--
 <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
@@ -8,7 +8,7 @@
 </head>
 
 <body>
-<h1>okuchitone</h1>
+<h1>otetetone</h1>
 <button id=btn>SOUND START</button><br>
 <div class="container">
   <video id="videoElement" playsinline style="display:none"></video>
@@ -21,13 +21,14 @@
 <label><input type="checkbox" id="backcameramode">backcamera mode</label>
 <hr>
 <footer>
+related: <a href="https://code4fukui.github.io/smaphotone/">smaphotone</a>, <a href="https://code4fukui.github.io/okuchitone/">okuchitone</a><br>
 lib: <a href="https://chuoling.github.io/mediapipe/solutions/face_mesh.html">Face Mesh - mediapipe</a><br>
-src: <a href="https://github.com/code4fukui/okuchitone/">okuchitone src on GitHub</a><br>
+src: <a href="https://github.com/code4fukui/otetetone/">otetetone src on GitHub</a><br>
 </footer>
 
 <script type="module">
 import { Camera } from "https://code4fukui.github.io/Camera/Camera.js";
-import { XTone } from "./XTone.js";
+import { XTone } from "https://code4fukui.github.io/okuchitone/XTone.js";
 import { drawConnectorsPolygon } from "https://code4fukui.github.io/mediapipe-test/drawConnectorsPolygon.js";
 import { FACEMESH_POLYGON_LIPS } from "https://code4fukui.github.io/mediapipe-test/FACEMESH_POLYGON.js";
 
