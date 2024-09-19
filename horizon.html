@@ -1,0 +1,165 @@
+<!DOCTYPE html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width">
+<title>otetetone horizon</title>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/control_utils/control_utils.js" crossorigin="anonymous"></script>
+<!--
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
+-->
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
+</head>
+
+<body>
+<h1>otetetone horizon</h1>
+<button id=btn>SOUND START</button><br>
+<div class="container">
+  <video id="videoElement" playsinline style="display:none"></video>
+  <canvas id="canvasElement"></canvas>
+</div>
+<div id=divres></div>
+
+<label><input type="checkbox" id="showimg">show original image</label>
+<label><input type="checkbox" id="mirrormode" checked>mirror mode</label>
+<label><input type="checkbox" id="backcameramode">backcamera mode</label>
+<hr>
+<footer>
+related: <a href="https://code4fukui.github.io/smaphotone/">smaphotone</a>, <a href="https://code4fukui.github.io/okuchitone/">okuchitone</a><br>
+lib: <a href="https://chuoling.github.io/mediapipe/solutions/hands.html">Hands - mediapipe</a><br>
+src: <a href="https://github.com/code4fukui/otetetone/">otetetone src on GitHub</a><br>
+</footer>
+
+<script type="module">
+import { Camera } from "https://code4fukui.github.io/Camera/Camera.js";
+import { XTone } from "https://code4fukui.github.io/okuchitone/XTone.js";
+//import { drowMarkOval } from "./drawMarkOvol.js";
+import { drawMarkFrog } from "./drawMarkFrog.js";
+
+const MAX_TONES = 6;
+
+const g = canvasElement.getContext("2d");
+
+const hands = new Hands({ locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}` });
+// https://chuoling.github.io/mediapipe/solutions/hands.html
+
+const WRIST = 0; // org
+const THUMB_TIP = 4;
+const INDEX_FINGER_MCP = 5;
+const INDEX_FINGER_TIP = 8;
+
+const xtones = [];
+for (let i = 0; i < MAX_TONES; i++) {
+  const xtone = new XTone();
+  xtone.freqmin = 110 / 4; // 27.5Hz
+  xtone.freqmax = 880 * 2; // 
+  xtones.push(xtone);
+}
+
+btn.onclick = () => {
+  btn.style.display = "none";
+  const xtone = xtones[0];
+  xtone.play(0.1, 0.5);
+  xtone.play(0);
+};
+
+hands.setOptions({
+  maxNumHands: MAX_TONES,
+  modelComplexity: 1,
+  minDetectionConfidence: 0.5,
+  minTrackingConfidence: 0.5,
+});
+hands.onResults((res) => {
+  const w = canvasElement.width;
+  const h = canvasElement.height;
+  g.save();
+  if (mirrormode.checked) {
+    g.scale(-1, 1);
+    g.translate(-w, 0);
+    /* // 180度回転
+    g.translate(w / 2, h / 2);
+    g.rotate(Math.PI);
+    g.translate(-w / 2, -h / 2);
+    */
+  }
+  g.clearRect(0, 0, w, h);
+  if (showimg.checked) {
+    g.drawImage(res.image, 0, 0, w, h);
+  }
+  const multiLandmarks = res.multiHandLandmarks;
+  if (multiLandmarks) {
+    for (let i = 0; i < MAX_TONES; i++) {
+      const xtone = xtones[i];
+      const landmarks = multiLandmarks[i];
+      if (!landmarks) {
+        xtone.play(0);
+        continue;
+      }
+
+      const getDistance = (landmarks, p1, p2) => {
+        const l1 = landmarks[p1];
+        const l2 = landmarks[p2];
+        const dx = l1.x - l2.x;
+        const dy = l1.y - l2.y;
+        const dz = l1.z - l2.z;
+        return Math.sqrt(dx * dx + dy * dy + dz * dz);
+      };
+      const getAverage = (landmarks, p1, p2) => {
+        const l1 = landmarks[p1];
+        const l2 = landmarks[p2];
+        const x = (l1.x + l2.x) / 2;
+        const y = (l1.y + l2.y) / 2;
+        const z = (l1.z + l2.z) / 2;
+        return { x, y, z };
+      };
+
+      const len1 = getDistance(landmarks, THUMB_TIP, INDEX_FINGER_TIP);
+      const len2 = getDistance(landmarks, WRIST, INDEX_FINGER_MCP);
+      const len0 = len1 / len2;
+      const ave = getAverage(landmarks, THUMB_TIP, INDEX_FINGER_TIP);
+      const noct = 2;
+      const tone = (1 - ave.x) / noct + Math.floor((1 - ave.y) * noct) * (1 / noct);
+      const minw = 0.3;
+      const maxw = 1.0;
+      const vol = len0 > maxw ? 1.0 : len0 < minw ? 0 : (len0 - minw) / (maxw - minw);
+      //console.log(vol, len0);
+      //divres.textContent = len;
+
+      xtone.play(vol, tone);
+
+      const size = w * .01;
+      //drawMarkOval(g, landmarks, THUMB_TIP, size);
+      //drawMarkOval(g, landmarks, INDEX_FINGER_TIP, size);
+      drawMarkFrog(g, landmarks, THUMB_TIP, INDEX_FINGER_TIP, vol, len2);
+    }
+  }
+  g.restore();
+});
+
+const tstop = performance.now() + 3000;
+
+const camera = new Camera(videoElement, {
+  onFrame: async () => {
+    //if (performance.now() > tstop) return;
+    const dpi = devicePixelRatio;
+    canvasElement.width = videoElement.videoWidth * dpi;
+    canvasElement.height = videoElement.videoHeight * dpi;
+    await hands.send({ image: videoElement });
+  },
+  width: 1280,
+  height: 720,
+  backcamera: backcameramode.checked,
+});
+camera.start();
+backcameramode.onchange = () => camera.flip();
+</script>
+
+<style>
+body {
+  margin: 0;
+  text-align: center;
+  font-family: sans-serif;
+}
+#canvasElement {
+  width: 100%;
+}
+</style>
+
+</body>
+</html>
